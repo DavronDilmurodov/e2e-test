@@ -5,5 +5,5 @@ export interface TodoType {
   title: string;
   text: string;
   isCompleted: boolean;
-  user: User;
+  user?: User;
 }

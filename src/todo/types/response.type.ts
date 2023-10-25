@@ -1,14 +1,15 @@
+import { UserType } from '../../user/types/user.type';
 import { TodoType } from './todo.type';
 
 export interface GetTodos {
   message: string;
-  data: TodoType[] | [];
+  data?: UserType;
   statusCode: number;
 }
 
 export interface TodoResponse {
   message: string;
-  data: TodoType | any;
+  data: TodoType;
   statusCode: number;
 }
 

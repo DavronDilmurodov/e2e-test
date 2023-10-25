@@ -30,13 +30,9 @@ export class UserService {
         where: { username },
       });
 
-      console.log(username);
-
       if (foundUser) {
         HttpStatus.BAD_REQUEST;
-        throw new BadRequestException(
-          'this username already busy: ' + username,
-        );
+        throw new BadRequestException('this username already busy');
       }
 
       const newUser = this.userRepository.create({
@@ -46,12 +42,10 @@ export class UserService {
 
       await this.userRepository.save(newUser);
 
-      console.log(newUser);
-
       return {
         message: 'CREATED',
         data: newUser,
-        statusCode: 200,
+        statusCode: 201,
       };
     } catch (error) {
       console.log(error.message);
@@ -66,21 +60,17 @@ export class UserService {
     try {
       const foundUser = await this.userRepository.findOneBy({ username });
 
-      console.log(username);
-
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
-
-      console.log(foundUser);
 
       if (foundUser.password != password) {
         HttpStatus.UNAUTHORIZED;
         throw new UnauthorizedException('wrong password or username');
       }
 
-      console.log(2);
+      HttpStatus.OK;
 
       return {
         message: 'OK',

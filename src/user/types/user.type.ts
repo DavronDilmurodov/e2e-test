@@ -4,5 +4,5 @@ export interface UserType {
   id: number;
   username: string;
   password: string;
-  // Todos: TodoType[] | [];
+  todos: TodoType[] | [];
 }

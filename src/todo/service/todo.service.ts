@@ -7,7 +7,7 @@ import {
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { DeleteTodo, TodoResponse } from '../types/response.type';
+import { DeleteTodo, GetTodos, TodoResponse } from '../types/response.type';
 import { CreateTodoDto } from '../dto/create-todo.dto';
 import { UpdateTodoDto } from '../dto/update-todo.dto';
 import { ErrorResponse } from '../../types/error.type';
@@ -23,7 +23,7 @@ export class TodoService {
     private todoRepository: Repository<Todo>,
   ) {}
 
-  async getTodos(id: number): Promise<object> {
+  async getTodos(id: number): Promise<GetTodos> {
     try {
       const foundUser = await this.userRepository.findOne({
         where: { id },

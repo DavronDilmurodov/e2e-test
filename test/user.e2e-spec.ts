@@ -1,31 +1,52 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import * as request from 'supertest';
+
 import { CreateUserDto } from '../src/user/dto/create-user.dto';
 import { UpdateUserDto } from '../src/user/dto/update-user.dto';
-import { UserService } from '../src/user/service/user.service';
-
-import * as request from 'supertest';
-import { UserResponse } from 'src/user/types/response.type';
+import {
+  AuthResponse,
+  DeleteUser,
+  UserResponse,
+} from '../src/user/types/response.type';
 import { AppModule } from '../src/app.module';
 
 describe('User (e2e)', () => {
   let app: INestApplication;
-  //   let userService: {
-  //     signUp: jest.fn((dto: CreateUserDto) => signUpRes),
-  //     signIn: jest.fn((dto: CreateUserDto) => signInRes),
-  //     findOne: jest.fn((id: number) => findOneRes),
-  //     update: jest.fn((id: number, dto: UpdateUserDto) => userRes),
-  //     remove: jest.fn((id: number) => userRes),
-  // };
 
-  const userRes: UserResponse = {
+  const userRes = {
     message: 'CREATED',
     data: {
-      id: 7,
-      username: 'dariusss',
-      password: '779979797',
+      id: 5,
+      username: 'potter',
+      password: '9999999999',
     },
     statusCode: 201,
+  };
+
+  const findOne = {
+    message: 'OK',
+    statusCode: 200,
+    data: {
+      id: 5,
+      username: 'potter',
+      password: '9999999999',
+    },
+  };
+
+  const signinRes: AuthResponse = {
+    message: 'OK',
+    statusCode: 200,
+  };
+
+  const updateRes: DeleteUser = {
+    message: 'UPDATED',
+    statusCode: 200,
+  };
+
+  const deleteRes: DeleteUser = {
+    message: 'DELETED',
+    statusCode: 200,
   };
 
   beforeAll(async () => {
@@ -43,8 +64,8 @@ describe('User (e2e)', () => {
 
   it('/user/signup (POST)', () => {
     const body: CreateUserDto = {
-      username: 'dariusss',
-      password: '779979797',
+      username: 'potter',
+      password: '9999999999',
     };
 
     return request(app.getHttpServer())
@@ -52,7 +73,54 @@ describe('User (e2e)', () => {
       .send(body)
       .expect(201)
       .expect(({ body }) => {
-        expect(body.data).toStrictEqual(userRes);
+        expect(body).toStrictEqual(userRes);
+      });
+  });
+
+  it('/user/signin (POST)', () => {
+    const body: CreateUserDto = {
+      username: 'potter',
+      password: '9999999999',
+    };
+
+    return request(app.getHttpServer())
+      .post('/user/signin')
+      .send(body)
+      .expect(({ body }) => {
+        expect(body).toStrictEqual(signinRes);
+      });
+  });
+
+  it('/user/5 (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/user/5')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toStrictEqual(findOne);
+      });
+  });
+
+  it('/user/5 (PUT)', () => {
+    const body: UpdateUserDto = {
+      username: 'ronaldo',
+      password: '9999999999',
+      newPassword: '77777777',
+    };
+    return request(app.getHttpServer())
+      .put('/user/5')
+      .send(body)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toStrictEqual(updateRes);
+      });
+  });
+
+  it('/user/5 (DELETE)', () => {
+    return request(app.getHttpServer())
+      .delete('/user/5')
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toStrictEqual(deleteRes);
       });
   });
 });
