@@ -4,11 +4,7 @@ import * as request from 'supertest';
 
 import { CreateUserDto } from '../src/user/dto/create-user.dto';
 import { UpdateUserDto } from '../src/user/dto/update-user.dto';
-import {
-  AuthResponse,
-  DeleteUser,
-  UserResponse,
-} from '../src/user/types/response.type';
+import { AuthResponse, DeleteUser } from '../src/user/types/response.type';
 import { AppModule } from '../src/app.module';
 
 describe('User (e2e)', () => {
@@ -17,7 +13,7 @@ describe('User (e2e)', () => {
   const userRes = {
     message: 'CREATED',
     data: {
-      id: 5,
+      id: 2,
       username: 'potter',
       password: '9999999999',
     },
@@ -28,7 +24,7 @@ describe('User (e2e)', () => {
     message: 'OK',
     statusCode: 200,
     data: {
-      id: 5,
+      id: 2,
       username: 'potter',
       password: '9999999999',
     },
@@ -91,23 +87,23 @@ describe('User (e2e)', () => {
       });
   });
 
-  it('/user/5 (GET)', () => {
+  it('/user/2 (GET)', () => {
     return request(app.getHttpServer())
-      .get('/user/5')
+      .get('/user/2')
       .expect(200)
       .expect(({ body }) => {
         expect(body).toStrictEqual(findOne);
       });
   });
 
-  it('/user/5 (PUT)', () => {
+  it('/user/2 (PUT)', () => {
     const body: UpdateUserDto = {
       username: 'ronaldo',
       password: '9999999999',
       newPassword: '77777777',
     };
     return request(app.getHttpServer())
-      .put('/user/5')
+      .put('/user/2')
       .send(body)
       .expect(200)
       .expect(({ body }) => {
@@ -115,9 +111,9 @@ describe('User (e2e)', () => {
       });
   });
 
-  it('/user/5 (DELETE)', () => {
+  it('/user/2 (DELETE)', () => {
     return request(app.getHttpServer())
-      .delete('/user/5')
+      .delete('/user/2')
       .expect(200)
       .expect(({ body }) => {
         expect(body).toStrictEqual(deleteRes);

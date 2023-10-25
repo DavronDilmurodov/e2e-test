@@ -17,14 +17,14 @@ describe('TodoController (e2e)', () => {
   let todoResponse = {
     message: 'CREATED',
     data: {
-      id: 4,
+      id: 1,
       title: 'wake',
       text: 'wake up',
       isCompleted: false,
       user: {
         id: 1,
-        username: 'ewmat',
-        password: '88888888',
+        username: 'alex',
+        password: '9999999999',
       },
     },
     statusCode: 201,
@@ -35,11 +35,11 @@ describe('TodoController (e2e)', () => {
     statusCode: 200,
     data: {
       id: 1,
-      username: 'ewmat',
+      username: 'alex',
       password: '88888888',
       todos: [
         {
-          id: 4,
+          id: 1,
           title: 'wake',
           text: 'wake up',
           isCompleted: false,
@@ -94,14 +94,14 @@ describe('TodoController (e2e)', () => {
       });
   });
 
-  it('/todo/1/4 (PUT)', () => {
+  it('/todo/1/1 (PUT)', () => {
     const body: UpdateTodoDto = {
       title: 'sleep',
       text: 'sleeep',
     };
 
     return request(app.getHttpServer())
-      .put('/todo/1/4')
+      .put('/todo/1/1')
       .send(body)
       .expect(200)
       .expect(({ body }) => {
@@ -109,18 +109,18 @@ describe('TodoController (e2e)', () => {
       });
   });
 
-  it('/todo/isCompleted/1/4', () => {
+  it('/todo/isCompleted/1/1', () => {
     return request(app.getHttpServer())
-      .put('/todo/isCompleted/1/4')
+      .put('/todo/isCompleted/1/1')
       .expect(200)
       .expect(({ body }) => {
         expect(body).toStrictEqual(updateTodoRes);
       });
   });
 
-  it('/todo/1/4', () => {
+  it('/todo/1/1', () => {
     return request(app.getHttpServer())
-      .delete('/todo/1/4')
+      .delete('/todo/1/1')
       .expect(200)
       .expect(({ body }) => {
         expect(body).toStrictEqual(deleteTodoRes);
