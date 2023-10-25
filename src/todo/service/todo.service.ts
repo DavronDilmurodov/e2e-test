@@ -1,40 +1,45 @@
 import {
-  BadRequestException,
   HttpStatus,
   Injectable,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
-import { Todo } from '../../models/todo.model';
-import { User } from '../../models/user.model';
+import { DeleteTodo, TodoResponse } from '../types/response.type';
 import { CreateTodoDto } from '../dto/create-todo.dto';
 import { UpdateTodoDto } from '../dto/update-todo.dto';
 import { ErrorResponse } from '../../types/error.type';
-import { DeleteTodo, GetTodos, TodoResponse } from '../types/response.type';
+import { Todo } from '../entitites/todo.entity';
+import { User } from '../../user/entities/user.entity';
 
 Injectable();
 export class TodoService {
   constructor(
-    @InjectModel(Todo) private readonly todoModel: typeof Todo,
-    @InjectModel(User) private readonly userModel: typeof User,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(Todo)
+    private todoRepository: Repository<Todo>,
   ) {}
 
-  async getTodos(id: number): Promise<GetTodos | ErrorResponse> {
+  async getTodos(id: number): Promise<object> {
     try {
-      const foundUser = await this.userModel.findOne({ where: { id } });
+      const foundUser = await this.userRepository.findOne({
+        where: { id },
+        relations: {
+          todos: true,
+        },
+      });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
 
-      const todos = await foundUser.getTodos();
-
       return {
         message: 'OK',
-        data: todos,
+        data: foundUser,
         statusCode: 200,
       };
     } catch (error) {
@@ -48,35 +53,26 @@ export class TodoService {
     body: CreateTodoDto,
   ): Promise<TodoResponse | ErrorResponse> {
     try {
-      const foundUser = await this.userModel.findOne({ where: { id } });
+      const foundUser = await this.userRepository.findOneBy({ id });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
 
-      if (!body.text) {
-        const createdTodo = await this.todoModel.create({
-          title: body.title,
-          user_id: id,
-        });
+      console.log(1);
 
-        await foundUser.addTodo(createdTodo);
-
-        return {
-          message: 'CREATED',
-          data: createdTodo,
-          statusCode: 201,
-        };
-      }
-
-      const createdTodo = await this.todoModel.create({
+      const createdTodo = this.todoRepository.create({
         title: body.title,
         text: body.text,
-        user_id: id,
+        user: foundUser,
       });
 
-      await foundUser.addTodo(createdTodo);
+      console.log(createdTodo);
+
+      await this.todoRepository.save(createdTodo);
+
+      console.log(2);
 
       return {
         message: 'CREATED',
@@ -93,69 +89,40 @@ export class TodoService {
     userId: number,
     todoId: number,
     { text, title }: UpdateTodoDto,
-  ): Promise<TodoResponse | ErrorResponse> {
+  ): Promise<DeleteTodo | ErrorResponse> {
     try {
-      const foundUser = await this.userModel.findOne({ where: { id: userId } });
+      const foundUser = await this.userRepository.findOneBy({ id: userId });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
 
-      const foundTodo = await this.todoModel.findOne({ where: { id: todoId } });
+      const foundTodo = await this.todoRepository.findOne({
+        where: { id: todoId },
+        relations: {
+          user: true,
+        },
+      });
 
       if (!foundTodo) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('todo not found');
       }
 
-      if (foundTodo.user_id !== userId) {
+      if (foundTodo.user.id !== userId) {
         HttpStatus.UNAUTHORIZED;
         throw new UnauthorizedException(
           'you do not have an access to update this todo',
         );
       }
 
-      if (!title && !text) {
-        HttpStatus.BAD_REQUEST;
-        throw new BadRequestException('edit something');
-      } else if (title && text) {
-        if (title.length < 2 || title.length > 20) {
-          HttpStatus.BAD_REQUEST;
-          throw new BadRequestException(
-            'length of title should be more than 2 and less than 20',
-          );
-        }
+      await this.todoRepository.update({ id: todoId }, { title, text });
 
-        const updatedTodo = await foundTodo.update({ title, text });
-        return {
-          message: 'UPDATED',
-          data: updatedTodo,
-          statusCode: 200,
-        };
-      } else if (title && !text) {
-        if (title.length < 2 || title.length > 20) {
-          HttpStatus.BAD_REQUEST;
-          throw new BadRequestException(
-            'length of title should be more than 2 and less than 20',
-          );
-        }
-
-        const updatedTodo = await foundTodo.update({ title });
-        return {
-          message: 'UPDATED',
-          data: updatedTodo,
-          statusCode: 200,
-        };
-      } else if (!title && text) {
-        const updatedTodo = await foundTodo.update({ text });
-
-        return {
-          message: 'UPDATED',
-          data: updatedTodo,
-          statusCode: 200,
-        };
-      }
+      return {
+        message: 'UPDATED',
+        statusCode: 200,
+      };
     } catch (error) {
       console.log(error.message);
       return error.response;
@@ -167,28 +134,33 @@ export class TodoService {
     todoId: number,
   ): Promise<DeleteTodo | ErrorResponse> {
     try {
-      const foundUser = await this.userModel.findOne({ where: { id: userId } });
+      const foundUser = await this.userRepository.findOneBy({ id: userId });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
 
-      const foundTodo = await this.todoModel.findOne({ where: { id: todoId } });
+      const foundTodo = await this.todoRepository.findOne({
+        where: { id: todoId },
+        relations: {
+          user: true,
+        },
+      });
 
       if (!foundTodo) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('todo not found');
       }
 
-      if (foundTodo.user_id !== userId) {
+      if (foundTodo.user.id !== userId) {
         HttpStatus.UNAUTHORIZED;
         throw new UnauthorizedException(
           'you do not have an access to delete this todo',
         );
       }
 
-      await foundTodo.destroy();
+      await this.todoRepository.remove(foundTodo);
 
       return {
         message: 'DELETED',
@@ -203,23 +175,28 @@ export class TodoService {
   async isCompleted(
     userId: number,
     todoId: number,
-  ): Promise<TodoResponse | ErrorResponse> {
+  ): Promise<DeleteTodo | ErrorResponse> {
     try {
-      const foundUser = await this.userModel.findOne({ where: { id: userId } });
+      const foundUser = await this.userRepository.findOneBy({ id: userId });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
 
-      const foundTodo = await this.todoModel.findOne({ where: { id: todoId } });
+      const foundTodo = await this.todoRepository.findOne({
+        where: { id: todoId },
+        relations: {
+          user: true,
+        },
+      });
 
       if (!foundTodo) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('todo not found');
       }
 
-      if (foundTodo.user_id !== userId) {
+      if (foundTodo.user.id !== userId) {
         HttpStatus.UNAUTHORIZED;
         throw new UnauthorizedException(
           'you do not have an access to change isCompleted in this todo',
@@ -227,17 +204,18 @@ export class TodoService {
       }
 
       if (foundTodo.isCompleted === false) {
-        const updatedTodo = await foundTodo.update({ isCompleted: true });
+        await this.todoRepository.update({ id: todoId }, { isCompleted: true });
         return {
           message: 'UPDATED',
-          data: updatedTodo,
           statusCode: 200,
         };
       } else if (foundTodo.isCompleted === true) {
-        const updatedTodo = await foundTodo.update({ isCompleted: false });
+        await this.todoRepository.update(
+          { id: todoId },
+          { isCompleted: false },
+        );
         return {
           message: 'UPDATED',
-          data: updatedTodo,
           statusCode: 200,
         };
       }

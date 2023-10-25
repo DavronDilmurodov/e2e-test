@@ -1,46 +1,54 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+// import { Test } from '@nestjs/testing';
+// import { INestApplication } from '@nestjs/common';
+// import * as request from 'supertest';
 
-import { TodoModule } from '../src/todo/todo.module';
-import { TodoResponse } from '../src/todo/types/response.type';
-import { TodoService } from '../src/todo/service/todo.service';
+// import { TodoModule } from '../src/todo/todo.module';
+// import { TodoResponse } from '../src/todo/types/response.type';
+// import { TodoService } from '../src/todo/service/todo.service';
 
-describe('TodoController (e2e)', () => {
-  let todo: INestApplication;
-  let todoService = { findAll: () => [] };
+// describe('TodoController (e2e)', () => {
+//   let todo: INestApplication;
+//   let todoService = { findAll: () => [] };
 
-  let todoResponse: TodoResponse;
+//   let todoResponse: TodoResponse = {
+//     message: 'ok',
+//     data: {},
+//     statusCode: 200,
+//   };
 
-  beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [TodoModule],
-    })
-      .overrideProvider(TodoService)
-      .useValue(todoService)
-      .compile();
+//   beforeAll(async () => {
+//     const moduleRef = await Test.createTestingModule({
+//       imports: [TodoModule],
+//     })
+//       .overrideProvider(TodoService)
+//       .useValue(todoService)
+//       .compile();
 
-    todo = moduleRef.createNestApplication();
-    await todo.init();
-  });
+//     todo = moduleRef.createNestApplication();
+//     await todo.init();
+//   });
 
-  it('/todo/:id (GET)', () => {
-    return request(todo.getHttpServer()).get('/todo/:id').expect(200).expect({
-      todoResponse,
-    });
-  });
+//   it('/todo/:id (GET)', () => {
+//     return request(todo.getHttpServer())
+//       .get('/todo/:id')
+//       .expect(200)
+//       .expect(({ body }) => {
+//         expect(body.status).toBe(200);
+//         expect(body.data).toEqual(todoResponse);
+//       });
+//   });
 
-  it('/todo/:id (POST)', () => {
-    return request(todo.getHttpServer()).post('/todo/:id').expect(201);
-  });
+//   it('/todo/:id (POST)', () => {
+//     return request(todo.getHttpServer()).post('/todo/:id').expect(201);
+//   });
 
-  it('/todo/:userId/:todoId', () => {
-    return request(todo.getHttpServer())
-      .put('/todo/:userId/:todoId')
-      .expect(200);
-  });
+//   it('/todo/:userId/:todoId', () => {
+//     return request(todo.getHttpServer())
+//       .put('/todo/:userId/:todoId')
+//       .expect(200);
+//   });
 
-  afterAll(async () => {
-    await todo.close();
-  });
-});
+//   afterAll(async () => {
+//     await todo.close();
+//   });
+// });

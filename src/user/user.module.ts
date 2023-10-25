@@ -1,21 +1,13 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { SequelizeModule } from '@nestjs/sequelize';
 
 import { UserService } from './service/user.service';
 import { UserController } from './controller/user.controller';
-import { User } from '../models/user.model';
+import { User } from './entities/user.entity';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
-  imports: [
-    SequelizeModule.forFeature([User]),
-    JwtModule.register({
-      global: true,
-      secret: process.env.SECRET_KEY,
-    }),
-  ],
+  imports: [TypeOrmModule.forFeature([User])],
   controllers: [UserController],
   providers: [UserService],
-  exports: [SequelizeModule],
 })
 export class UserModule {}

@@ -1,19 +1,20 @@
 import { Module } from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { UserModule } from './user/user.module';
 import { TodoModule } from './todo/todo.module';
-import { Todo } from './models/todo.model';
-import { User } from './models/user.model';
+import { User } from './user/entities/user.entity';
+import { Todo } from './todo/entitites/todo.entity';
 
 @Module({
   imports: [
-    SequelizeModule.forRoot({
-      dialect: 'postgres',
+    TypeOrmModule.forRoot({
+      type: 'postgres',
       username: 'postgres',
       database: 'todo_nest',
       password: 'luntik553',
-      // models: [Todo, User],
+      entities: [User, Todo],
+      synchronize: true,
     }),
     UserModule,
     TodoModule,

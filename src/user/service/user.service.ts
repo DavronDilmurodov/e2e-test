@@ -5,22 +5,20 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { InjectModel } from '@nestjs/sequelize';
 
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
-import { User } from '../../models/user.model';
-import { Todo } from '../../models/todo.model';
+import { User } from '../entities/user.entity';
 import { AuthResponse, DeleteUser, UserResponse } from '../types/response.type';
 import { ErrorResponse } from '../../types/error.type';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
   constructor(
-    private jwtService: JwtService,
-    @InjectModel(User)
-    private userModel: typeof User,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   async signUp({
@@ -28,30 +26,36 @@ export class UserService {
     username,
   }: CreateUserDto): Promise<AuthResponse | ErrorResponse> {
     try {
-      const foundUser = await this.userModel.findOne({ where: { username } });
+      const foundUser = await this.userRepository.findOne({
+        where: { username },
+      });
+
+      console.log(username);
 
       if (foundUser) {
         HttpStatus.BAD_REQUEST;
-        throw new BadRequestException('this username already busy');
+        throw new BadRequestException(
+          'this username already busy: ' + username,
+        );
       }
 
-      const newUser = await this.userModel.create({
+      const newUser = this.userRepository.create({
         username,
         password,
       });
 
-      const payload = { id: newUser.id };
+      await this.userRepository.save(newUser);
 
-      const token = await this.jwtService.signAsync(payload);
+      console.log(newUser);
 
       return {
         message: 'CREATED',
-        data: { token },
+        data: newUser,
         statusCode: 200,
       };
     } catch (error) {
       console.log(error.message);
-      return error.response || null;
+      return error.response;
     }
   }
 
@@ -60,25 +64,26 @@ export class UserService {
     username,
   }: CreateUserDto): Promise<AuthResponse | ErrorResponse> {
     try {
-      const foundUser = await this.userModel.findOne({ where: { username } });
+      const foundUser = await this.userRepository.findOneBy({ username });
+
+      console.log(username);
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
 
+      console.log(foundUser);
+
       if (foundUser.password != password) {
         HttpStatus.UNAUTHORIZED;
         throw new UnauthorizedException('wrong password or username');
       }
 
-      const payload = { id: foundUser.id };
-
-      const token = await this.jwtService.signAsync(payload);
+      console.log(2);
 
       return {
         message: 'OK',
-        data: { token },
         statusCode: 200,
       };
     } catch (error) {
@@ -89,10 +94,7 @@ export class UserService {
 
   async findOne(id: number): Promise<UserResponse | ErrorResponse> {
     try {
-      const foundUser = await this.userModel.findOne({
-        where: { id },
-        include: [Todo],
-      });
+      const foundUser = await this.userRepository.findOneBy({ id });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
@@ -113,17 +115,15 @@ export class UserService {
   async update(
     id: number,
     { username, password, newPassword }: UpdateUserDto,
-  ): Promise<UserResponse | ErrorResponse> {
+  ): Promise<DeleteUser | ErrorResponse> {
     try {
-      const foundUser = await this.userModel.findOne({ where: { id } });
+      const foundUser = await this.userRepository.findOne({ where: { id } });
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
 
-      const foundUsername = await this.userModel.findOne({
-        where: { username },
-      });
+      const foundUsername = await this.userRepository.findOneBy({ username });
 
       if (foundUsername) {
         HttpStatus.BAD_REQUEST;
@@ -135,14 +135,13 @@ export class UserService {
         throw new UnauthorizedException('password is wrong');
       }
 
-      const updatedUser = await foundUser.update({
+      await this.userRepository.update(id, {
         username,
-        password: newPassword.toString(),
+        password: newPassword,
       });
 
       return {
         message: 'UPDATED',
-        data: updatedUser,
         statusCode: 200,
       };
     } catch (error) {
@@ -153,14 +152,14 @@ export class UserService {
 
   async remove(id: number): Promise<DeleteUser> {
     try {
-      const foundUser = await this.userModel.findOne({ where: { id } });
+      const foundUser = await this.userRepository.findOne({ where: { id } });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
 
-      await foundUser.destroy();
+      await this.userRepository.remove(foundUser);
 
       return {
         message: 'DELETED',

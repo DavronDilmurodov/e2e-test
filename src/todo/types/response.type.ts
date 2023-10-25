@@ -8,7 +8,7 @@ export interface GetTodos {
 
 export interface TodoResponse {
   message: string;
-  data: TodoType;
+  data: TodoType | any;
   statusCode: number;
 }
 
