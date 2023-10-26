@@ -2,44 +2,43 @@ import { Test } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 
-import {
-  DeleteTodo,
-  GetTodos,
-  TodoResponse,
-} from '../src/todo/types/response.type';
+import { DeleteTodo } from '../src/todo/types/response.type';
 import { AppModule } from '../src/app.module';
 import { UpdateTodoDto } from '../src/todo/dto/update-todo.dto';
 import { CreateTodoDto } from '../src/todo/dto/create-todo.dto';
 
 describe('TodoController (e2e)', () => {
   let app: INestApplication;
+  let authToken: string;
 
   let todoResponse = {
     message: 'CREATED',
     data: {
-      id: 1,
+      id: expect.any(Number),
       title: 'wake',
       text: 'wake up',
       isCompleted: false,
       user: {
-        id: 1,
-        username: 'alex',
-        password: '9999999999',
+        id: expect.any(Number),
+        username: 'messi',
+        password: '9797797997799779',
+        avatar: '1698414549183___right.svg',
       },
     },
     statusCode: 201,
   };
 
-  const getTodosRes: GetTodos = {
+  const getTodosRes = {
     message: 'OK',
     statusCode: 200,
     data: {
-      id: 1,
-      username: 'alex',
-      password: '88888888',
+      id: expect.any(Number),
+      username: 'messi',
+      password: '9797797997799779',
+      avatar: '1698414549183___right.svg',
       todos: [
         {
-          id: 1,
+          id: expect.any(Number),
           title: 'wake',
           text: 'wake up',
           isCompleted: false,
@@ -65,19 +64,23 @@ describe('TodoController (e2e)', () => {
 
     app = moduleRef.createNestApplication();
     await app.init();
+
+    authToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAsImlhdCI6MTY5ODMzNTc5NX0.be3y14EUL7yNnoRfjICej3ITxbRVITwMINhvt404brg';
   });
 
   afterAll(async () => {
     await app.close();
   });
 
-  it('/todo/1 (POST)', () => {
+  it('/todo (POST)', () => {
     const body: CreateTodoDto = {
       title: 'wake',
       text: 'wake up',
     };
     return request(app.getHttpServer())
-      .post('/todo/1')
+      .post('/todo')
+      .set('Authorization', `Bearer ${authToken}`)
       .send(body)
       .expect(201)
       .expect(({ body }) => {
@@ -85,23 +88,25 @@ describe('TodoController (e2e)', () => {
       });
   });
 
-  it('/todo/1 (GET)', () => {
+  it('/todo (GET)', () => {
     return request(app.getHttpServer())
-      .get('/todo/1')
+      .get('/todo')
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body).toEqual(getTodosRes);
       });
   });
 
-  it('/todo/1/1 (PUT)', () => {
+  it('/todo/6 (PUT)', () => {
     const body: UpdateTodoDto = {
       title: 'sleep',
       text: 'sleeep',
     };
 
     return request(app.getHttpServer())
-      .put('/todo/1/1')
+      .put('/todo/6')
+      .set('Authorization', `Bearer ${authToken}`)
       .send(body)
       .expect(200)
       .expect(({ body }) => {
@@ -109,18 +114,20 @@ describe('TodoController (e2e)', () => {
       });
   });
 
-  it('/todo/isCompleted/1/1', () => {
+  it('/todo/isCompleted/6', () => {
     return request(app.getHttpServer())
-      .put('/todo/isCompleted/1/1')
+      .put('/todo/isCompleted/6')
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body).toStrictEqual(updateTodoRes);
       });
   });
 
-  it('/todo/1/1', () => {
+  it('/todo/6', () => {
     return request(app.getHttpServer())
-      .delete('/todo/1/1')
+      .delete('/todo/6')
+      .set('Authorization', `Bearer ${authToken}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body).toStrictEqual(deleteTodoRes);

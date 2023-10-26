@@ -13,6 +13,7 @@ import { UpdateTodoDto } from '../dto/update-todo.dto';
 import { ErrorResponse } from '../../types/error.type';
 import { Todo } from '../entitites/todo.entity';
 import { User } from '../../user/entities/user.entity';
+import { JwtService } from '@nestjs/jwt';
 
 Injectable();
 export class TodoService {
@@ -21,15 +22,25 @@ export class TodoService {
     private userRepository: Repository<User>,
     @InjectRepository(Todo)
     private todoRepository: Repository<Todo>,
+    private jwtService: JwtService,
   ) {}
 
-  async getTodos(id: number): Promise<GetTodos> {
+  async getTodos(token: string): Promise<GetTodos> {
     try {
+      let decodedtoken;
+
+      try {
+        decodedtoken = await this.jwtService.verifyAsync(token);
+      } catch (error) {
+        HttpStatus.FORBIDDEN;
+        return error.message;
+      }
+
       const foundUser = await this.userRepository.findOne({
-        where: { id },
-        relations: {
-          todos: true,
+        where: {
+          id: decodedtoken.id,
         },
+        relations: { todos: true },
       });
 
       if (!foundUser) {
@@ -49,30 +60,36 @@ export class TodoService {
   }
 
   async createTodo(
-    id: number,
+    token: string,
     body: CreateTodoDto,
   ): Promise<TodoResponse | ErrorResponse> {
     try {
-      const foundUser = await this.userRepository.findOneBy({ id });
+      let decodedtoken;
+
+      try {
+        decodedtoken = await this.jwtService.verifyAsync(token);
+      } catch (error) {
+        HttpStatus.FORBIDDEN;
+        return error.message;
+      }
+
+      const foundUser = await this.userRepository.findOneBy({
+        id: decodedtoken.id,
+      });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
       }
-
-      console.log(1);
-
       const createdTodo = this.todoRepository.create({
         title: body.title,
         text: body.text,
         user: foundUser,
       });
 
-      console.log(createdTodo);
-
       await this.todoRepository.save(createdTodo);
 
-      console.log(2);
+      console.log(createdTodo);
 
       return {
         message: 'CREATED',
@@ -86,12 +103,23 @@ export class TodoService {
   }
 
   async updateTodo(
-    userId: number,
-    todoId: number,
+    token: string,
+    id: number,
     { text, title }: UpdateTodoDto,
   ): Promise<DeleteTodo | ErrorResponse> {
     try {
-      const foundUser = await this.userRepository.findOneBy({ id: userId });
+      let decodedtoken;
+
+      try {
+        decodedtoken = await this.jwtService.verifyAsync(token);
+      } catch (error) {
+        HttpStatus.FORBIDDEN;
+        return error.message;
+      }
+
+      const foundUser = await this.userRepository.findOneBy({
+        id: decodedtoken.id,
+      });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
@@ -99,7 +127,7 @@ export class TodoService {
       }
 
       const foundTodo = await this.todoRepository.findOne({
-        where: { id: todoId },
+        where: { id },
         relations: {
           user: true,
         },
@@ -110,14 +138,14 @@ export class TodoService {
         throw new NotFoundException('todo not found');
       }
 
-      if (foundTodo.user.id !== userId) {
+      if (foundTodo.user.id !== foundUser.id) {
         HttpStatus.UNAUTHORIZED;
         throw new UnauthorizedException(
           'you do not have an access to update this todo',
         );
       }
 
-      await this.todoRepository.update({ id: todoId }, { title, text });
+      await this.todoRepository.update(id, { title, text });
 
       return {
         message: 'UPDATED',
@@ -130,11 +158,22 @@ export class TodoService {
   }
 
   async deleteTodo(
-    userId: number,
-    todoId: number,
+    token: string,
+    id: number,
   ): Promise<DeleteTodo | ErrorResponse> {
     try {
-      const foundUser = await this.userRepository.findOneBy({ id: userId });
+      let decodedtoken;
+
+      try {
+        decodedtoken = await this.jwtService.verifyAsync(token);
+      } catch (error) {
+        HttpStatus.FORBIDDEN;
+        return error.message;
+      }
+
+      const foundUser = await this.userRepository.findOneBy({
+        id: decodedtoken.id,
+      });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
@@ -142,7 +181,7 @@ export class TodoService {
       }
 
       const foundTodo = await this.todoRepository.findOne({
-        where: { id: todoId },
+        where: { id },
         relations: {
           user: true,
         },
@@ -153,7 +192,7 @@ export class TodoService {
         throw new NotFoundException('todo not found');
       }
 
-      if (foundTodo.user.id !== userId) {
+      if (foundTodo.user.id !== foundUser.id) {
         HttpStatus.UNAUTHORIZED;
         throw new UnauthorizedException(
           'you do not have an access to delete this todo',
@@ -173,11 +212,22 @@ export class TodoService {
   }
 
   async isCompleted(
-    userId: number,
-    todoId: number,
+    token: string,
+    id: number,
   ): Promise<DeleteTodo | ErrorResponse> {
     try {
-      const foundUser = await this.userRepository.findOneBy({ id: userId });
+      let decodedtoken;
+
+      try {
+        decodedtoken = await this.jwtService.verifyAsync(token);
+      } catch (error) {
+        HttpStatus.FORBIDDEN;
+        return error.message;
+      }
+
+      const foundUser = await this.userRepository.findOneBy({
+        id: decodedtoken.id,
+      });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
@@ -185,7 +235,7 @@ export class TodoService {
       }
 
       const foundTodo = await this.todoRepository.findOne({
-        where: { id: todoId },
+        where: { id },
         relations: {
           user: true,
         },
@@ -196,24 +246,21 @@ export class TodoService {
         throw new NotFoundException('todo not found');
       }
 
-      if (foundTodo.user.id !== userId) {
+      if (foundTodo.user.id !== foundUser.id) {
         HttpStatus.UNAUTHORIZED;
         throw new UnauthorizedException(
-          'you do not have an access to change isCompleted in this todo',
+          'you do not have an access to change isCompleted of this todo',
         );
       }
 
       if (foundTodo.isCompleted === false) {
-        await this.todoRepository.update({ id: todoId }, { isCompleted: true });
+        await this.todoRepository.update({ id: id }, { isCompleted: true });
         return {
           message: 'UPDATED',
           statusCode: 200,
         };
       } else if (foundTodo.isCompleted === true) {
-        await this.todoRepository.update(
-          { id: todoId },
-          { isCompleted: false },
-        );
+        await this.todoRepository.update({ id: id }, { isCompleted: false });
         return {
           message: 'UPDATED',
           statusCode: 200,

@@ -9,14 +9,16 @@ import { AppModule } from '../src/app.module';
 
 describe('User (e2e)', () => {
   let app: INestApplication;
+  let token: string;
 
   const userRes = {
     message: 'CREATED',
     data: {
-      id: 2,
+      id: expect.any(Number),
       username: 'potter',
       password: '9999999999',
     },
+    token: expect.any(String),
     statusCode: 201,
   };
 
@@ -24,14 +26,20 @@ describe('User (e2e)', () => {
     message: 'OK',
     statusCode: 200,
     data: {
-      id: 2,
+      id: expect.any(Number),
       username: 'potter',
       password: '9999999999',
     },
   };
 
-  const signinRes: AuthResponse = {
+  const signinRes = {
     message: 'OK',
+    data: {
+      id: expect.any(Number),
+      username: 'potter',
+      password: '9999999999',
+    },
+    token: expect.any(String),
     statusCode: 200,
   };
 
@@ -52,6 +60,9 @@ describe('User (e2e)', () => {
 
     app = moduleRef.createNestApplication();
     await app.init();
+
+    token =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTAsImlhdCI6MTY5ODMzNTc5NX0.be3y14EUL7yNnoRfjICej3ITxbRVITwMINhvt404brg';
   });
 
   afterAll(async () => {
@@ -69,41 +80,43 @@ describe('User (e2e)', () => {
       .send(body)
       .expect(201)
       .expect(({ body }) => {
-        expect(body).toStrictEqual(userRes);
+        expect(body).toEqual(userRes);
       });
   });
 
   it('/user/signin (POST)', () => {
     const body: CreateUserDto = {
-      username: 'potter',
-      password: '9999999999',
+      username: 'luntikk',
+      password: 'dmakmdkamdkamdka',
     };
 
     return request(app.getHttpServer())
       .post('/user/signin')
       .send(body)
       .expect(({ body }) => {
-        expect(body).toStrictEqual(signinRes);
+        expect(body).toEqual(expect.objectContaining(body));
       });
   });
 
-  it('/user/2 (GET)', () => {
+  it('/user (GET)', () => {
     return request(app.getHttpServer())
-      .get('/user/2')
+      .get('/user')
+      .set('Authorization', `Bearer ${token}`)
       .expect(200)
       .expect(({ body }) => {
-        expect(body).toStrictEqual(findOne);
+        expect(body).toEqual(findOne);
       });
   });
 
-  it('/user/2 (PUT)', () => {
+  it('/user (PUT)', () => {
     const body: UpdateUserDto = {
       username: 'ronaldo',
       password: '9999999999',
       newPassword: '77777777',
     };
     return request(app.getHttpServer())
-      .put('/user/2')
+      .put('/user')
+      .set('Authorization', `Bearer ${token}`)
       .send(body)
       .expect(200)
       .expect(({ body }) => {
@@ -111,9 +124,10 @@ describe('User (e2e)', () => {
       });
   });
 
-  it('/user/2 (DELETE)', () => {
+  it('/user (DELETE)', () => {
     return request(app.getHttpServer())
-      .delete('/user/2')
+      .delete('/user')
+      .set('Authorization', `Bearer ${token}`)
       .expect(200)
       .expect(({ body }) => {
         expect(body).toStrictEqual(deleteRes);

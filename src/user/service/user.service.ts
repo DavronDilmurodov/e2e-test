@@ -13,19 +13,25 @@ import { AuthResponse, DeleteUser, UserResponse } from '../types/response.type';
 import { ErrorResponse } from '../../types/error.type';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private jwtService: JwtService,
   ) {}
 
-  async signUp({
-    password,
-    username,
-  }: CreateUserDto): Promise<AuthResponse | ErrorResponse> {
+  async signUp(
+    { password, username }: CreateUserDto,
+    file: string,
+  ): Promise<AuthResponse | ErrorResponse> {
     try {
+      if (!file) {
+        HttpStatus.BAD_REQUEST;
+        throw new BadRequestException('avatar is required');
+      }
       const foundUser = await this.userRepository.findOne({
         where: { username },
       });
@@ -38,13 +44,17 @@ export class UserService {
       const newUser = this.userRepository.create({
         username,
         password,
+        avatar: file,
       });
 
       await this.userRepository.save(newUser);
 
+      const payload = { id: newUser.id };
+
       return {
         message: 'CREATED',
         data: newUser,
+        token: await this.jwtService.signAsync(payload),
         statusCode: 201,
       };
     } catch (error) {
@@ -70,10 +80,14 @@ export class UserService {
         throw new UnauthorizedException('wrong password or username');
       }
 
+      const payload = { id: foundUser.id };
+
       HttpStatus.OK;
 
       return {
         message: 'OK',
+        data: foundUser,
+        token: await this.jwtService.signAsync(payload),
         statusCode: 200,
       };
     } catch (error) {
@@ -82,9 +96,20 @@ export class UserService {
     }
   }
 
-  async findOne(id: number): Promise<UserResponse | ErrorResponse> {
+  async findOne(token: string): Promise<UserResponse | ErrorResponse> {
     try {
-      const foundUser = await this.userRepository.findOneBy({ id });
+      let decodedtoken;
+
+      try {
+        decodedtoken = await this.jwtService.verifyAsync(token);
+      } catch (error) {
+        HttpStatus.FORBIDDEN;
+        return error.message;
+      }
+
+      const foundUser = await this.userRepository.findOneBy({
+        id: decodedtoken.id,
+      });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
@@ -103,11 +128,24 @@ export class UserService {
   }
 
   async update(
-    id: number,
     { username, password, newPassword }: UpdateUserDto,
+    token: string,
+    avatar: string,
   ): Promise<DeleteUser | ErrorResponse> {
     try {
-      const foundUser = await this.userRepository.findOne({ where: { id } });
+      let decodedtoken;
+
+      try {
+        decodedtoken = await this.jwtService.verifyAsync(token);
+      } catch (error) {
+        HttpStatus.FORBIDDEN;
+        return error.message;
+      }
+
+      const foundUser = await this.userRepository.findOneBy({
+        id: decodedtoken.id,
+      });
+
       if (!foundUser) {
         HttpStatus.NOT_FOUND;
         throw new NotFoundException('user not found');
@@ -125,9 +163,10 @@ export class UserService {
         throw new UnauthorizedException('password is wrong');
       }
 
-      await this.userRepository.update(id, {
+      await this.userRepository.update(foundUser.id, {
         username,
         password: newPassword,
+        avatar,
       });
 
       return {
@@ -140,9 +179,20 @@ export class UserService {
     }
   }
 
-  async remove(id: number): Promise<DeleteUser> {
+  async remove(token: string): Promise<DeleteUser> {
     try {
-      const foundUser = await this.userRepository.findOne({ where: { id } });
+      let decodedtoken;
+
+      try {
+        decodedtoken = await this.jwtService.verifyAsync(token);
+      } catch (error) {
+        HttpStatus.FORBIDDEN;
+        return error.message;
+      }
+
+      const foundUser = await this.userRepository.findOneBy({
+        id: decodedtoken.id,
+      });
 
       if (!foundUser) {
         HttpStatus.NOT_FOUND;

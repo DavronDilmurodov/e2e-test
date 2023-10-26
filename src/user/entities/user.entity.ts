@@ -18,6 +18,9 @@ export class User {
   @Column()
   password: string;
 
+  @Column()
+  avatar: string;
+
   @OneToMany(() => Todo, (todo) => todo.user)
   @JoinColumn({
     name: 'user_id',

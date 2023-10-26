@@ -7,51 +7,66 @@ import {
   Param,
   Body,
   ParseIntPipe,
+  Req,
 } from '@nestjs/common';
 
 import { TodoService } from '../service/todo.service';
 import { CreateTodoDto } from '../dto/create-todo.dto';
 import { UpdateTodoDto } from '../dto/update-todo.dto';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiHeader,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
+@ApiTags('todos')
 @Controller('todo')
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
 
-  @Get(':id')
-  getTodos(@Param('id', ParseIntPipe) id: number) {
-    return this.todoService.getTodos(id);
+  @ApiBearerAuth('JWT-auth')
+  @ApiOkResponse({ description: 'user and his todos' })
+  @Get()
+  getTodos(@Req() req) {
+    const token = req.token;
+    return this.todoService.getTodos(token);
   }
 
-  @Post(':id')
-  createTodo(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() body: CreateTodoDto,
-  ) {
-    return this.todoService.createTodo(id, body);
+  @ApiBearerAuth('JWT-auth')
+  @ApiCreatedResponse({ description: 'todo was created' })
+  @Post()
+  createTodo(@Req() req, @Body() body: CreateTodoDto) {
+    const token = req.token;
+    return this.todoService.createTodo(token, body);
   }
 
-  @Put(':userId/:todoId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOkResponse({ description: 'todo was updated' })
+  @Put(':id')
   updatedTodo(
-    @Param('userId', ParseIntPipe) userId: number,
-    @Param('todoId', ParseIntPipe) todoId: number,
+    @Req() req,
+    @Param('id', ParseIntPipe) id: number,
     @Body() body: UpdateTodoDto,
   ) {
-    return this.todoService.updateTodo(userId, todoId, body);
+    const token = req.token;
+    return this.todoService.updateTodo(token, id, body);
   }
 
-  @Put('isCompleted/:userId/:todoId')
-  isCompleted(
-    @Param('userId', ParseIntPipe) userId: number,
-    @Param('todoId', ParseIntPipe) todoId: number,
-  ) {
-    return this.todoService.isCompleted(userId, todoId);
+  @ApiBearerAuth('JWT-auth')
+  @ApiOkResponse({ description: 'isCompleted of todo was updated' })
+  @Put('isCompleted/:id')
+  isCompleted(@Req() req, @Param('id', ParseIntPipe) id: number) {
+    const token = req.token;
+    return this.todoService.isCompleted(token, id);
   }
 
-  @Delete(':userId/:todoId')
-  deleteTodo(
-    @Param('userId', ParseIntPipe) userId: number,
-    @Param('todoId', ParseIntPipe) todoId: number,
-  ) {
-    return this.todoService.deleteTodo(userId, todoId);
+  @ApiBearerAuth('JWT-auth')
+  @ApiOkResponse({ description: 'todo was deleted' })
+  @Delete(':id')
+  deleteTodo(@Req() req, @Param('id', ParseIntPipe) id: number) {
+    const token = req.token;
+    return this.todoService.deleteTodo(token, id);
   }
 }

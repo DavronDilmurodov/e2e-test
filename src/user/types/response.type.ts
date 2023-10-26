@@ -3,6 +3,7 @@ import { UserType } from './user.type';
 export interface AuthResponse {
   message: string;
   data?: UserType;
+  token?: string;
   statusCode: number;
 }
 
